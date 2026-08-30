@@ -213,6 +213,7 @@ class RelaySession {
       sock.once('error', onErr);
       sock.once('close', onClose);
       sock.write(req);
+      if (body) sock.write(body);   // тело запроса — иначе мак получит пустой body
     });
   }
 
