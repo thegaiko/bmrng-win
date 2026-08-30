@@ -55,8 +55,11 @@ class InstallFlow {
     try { res = await this.relay.call('/login', body, 300000); }
     catch (e) { this._closeRelay(); return { status: 'error', message: e.message }; }
 
-    if (res.status === '2fa_required') return { status: '2fa' };
-    if (res.status !== 'ok') { return { status: 'error', message: res.message || 'Не удалось войти в Apple ID' }; }
+    if (res.status === '2fa_required') return { status: '2fa' };   // мак держим — код придёт на него же
+    if (res.status !== 'ok') {
+      this._closeRelay();   // вход не удался — отпускаем мак, не держим его зря
+      return { status: 'error', message: res.message || 'Не удалось войти в Apple ID' };
+    }
     this.session = res.session;
     this.emit('phase', { phase: 'logged-in', name: res.name || this.creds.email });
     this._run().catch((e) => this.emit('done', { error: e.message }));
@@ -64,6 +67,15 @@ class InstallFlow {
   }
 
   _closeRelay() { if (this.relay) { try { this.relay.close(); } catch {} this.relay = null; } }
+
+  // Прервать сессию и освободить мак (при новой попытке или закрытии окна).
+  async abort() {
+    if (this.relay && this.session) {
+      try { await this.relay.call('/logout', { session: this.session }, 30000); } catch {}
+    }
+    this.session = null;
+    this._closeRelay();
+  }
 
   // Шаги 3+: ссылки → освобождение мака → скачивание/сборка/установка каждого.
   async _run() {

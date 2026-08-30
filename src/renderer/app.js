@@ -222,7 +222,7 @@ async function onGo() {
     if (!code) return err('Введите код из сообщения Apple');
     lock(true); $('flow-status').textContent = 'Проверяю код…';
     const r = await api.flow.code(code);
-    return handleLogin(r);
+    return handleLogin(r, true);
   }
 
   const apps = collectApps();
@@ -237,28 +237,41 @@ async function onGo() {
   lock(true);
   $('flow-status').textContent = 'Занимаю свободный мак и вхожу в Apple ID…';
   const r = await api.flow.login(apps, email, pass);
-  handleLogin(r);
+  handleLogin(r, false);
 }
 
-function handleLogin(r) {
+function handleLogin(r, fromCode) {
   const err = (m) => { $('flow-error').textContent = m || ''; };
-  if (!r.ok) { lock(false); return err(r.error); }
+  if (!r.ok) { lock(false); resetGo(); return err(r.error); }
   const res = r.data;
   if (res.status === '2fa') {
     awaitingCode = true; lock(false);
     $('code-row').classList.remove('hidden');
     $('btn-go').textContent = 'Подтвердить код';
+    $('ap-code').value = '';
     $('ap-code').focus();
     $('flow-status').textContent = 'Нужен код двухфакторной аутентификации';
     return;
   }
-  if (res.status === 'error') { lock(false); resetGo(); return err(res.message); }
+  if (res.status === 'error') {
+    // мак уже отпущен на стороне сервера — сбрасываем к началу, не залипаем на коде
+    lock(false); resetGo();
+    err((res.message || 'не удалось войти') +
+      (fromCode ? '. Введите Apple ID и пароль заново — Apple пришлёт новый код.' : ''));
+    $('flow-status').textContent = 'Не вошли — попробуйте снова';
+    return;
+  }
   // ok — дальше пойдут события flow
-  awaitingCode = false; resetGo();
+  resetGo();
   $('flow-status').textContent = 'Вошли. Запрашиваю ссылки…';
 }
 
-function resetGo() { $('code-row').classList.add('hidden'); $('btn-go').textContent = 'Войти и скачать'; $('ap-code').value = ''; }
+function resetGo() {
+  awaitingCode = false;
+  $('code-row').classList.add('hidden');
+  $('btn-go').textContent = 'Войти и скачать';
+  $('ap-code').value = '';
+}
 function lock(on) {
   ['ap-email', 'ap-pass', 'manual-ids', 'search'].forEach((i) => $(i).disabled = on);
   $('btn-go').disabled = on;

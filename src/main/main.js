@@ -38,6 +38,7 @@ function createWindow() {
     },
   });
   win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
+  win.on('close', () => { if (flow) { try { flow.abort(); } catch {} } });   // освободить мак при выходе
 }
 
 function send(channel, payload) { if (win && !win.isDestroyed()) win.webContents.send(channel, payload); }
@@ -94,6 +95,7 @@ ipcMain.handle('devices:check', wrap(async () => {
 // --- сценарий установки --------------------------------------------------------
 
 ipcMain.handle('flow:login', wrap(async (apps, email, password) => {
+  if (flow) { try { await flow.abort(); } catch {} }   // отпустить прежний мак, не плодить занятые
   flow = new InstallFlow({ backend, boot: BOOT, downloadDir, emit: (event, payload) => send('flow', { event, payload }) });
   return flow.login(apps, email, password);
 }));
