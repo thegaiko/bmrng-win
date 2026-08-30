@@ -7,7 +7,7 @@
   "license": "UNLICENSED",
   "private": true,
   "main": "src/main/main.js",
-  "repository": { "type": "git", "url": "https://github.com/OWNER/REPO.git" },
+  "repository": { "type": "git", "url": "https://github.com/thegaiko/bmrng-win.git" },
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --win --publish never",
