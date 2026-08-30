@@ -7,6 +7,10 @@ let selected = new Set();
 let user = null;
 let rows = new Map();       // key -> {el, bar, state, img, nm}
 let awaitingCode = false;
+let deviceState = { udid: null, tools: true };
+let currentApps = [];
+let phoneRows = new Map();  // key -> элемент статуса на экране телефона
+let devicePoll = null;
 
 // ------------------------------------------------------------ загрузка ----
 async function init() {
@@ -114,6 +118,9 @@ function wireMain() {
   $('search').oninput = () => renderCatalog($('search').value.trim().toLowerCase());
   $('btn-go').onclick = onGo;
   $('update-install').onclick = () => api.update.install();
+  $('phone-refresh').onclick = () => checkDevice();
+  // авто-опрос: как воткнули/доверили телефон — панель обновится сама
+  if (!devicePoll) devicePoll = setInterval(() => checkDevice(), 4000);
 }
 
 async function loadCatalog() {
@@ -136,14 +143,61 @@ function renderCatalog(filter) {
   }
 }
 
+// --- панель айфона справа ---
+function setPhone(cls, ico, title, sub) {
+  const phone = $('phone');
+  phone.classList.remove('connected', 'disconnected', 'checking', 'installing');
+  phone.classList.add(cls);
+  $('phone-ico').textContent = ico;
+  $('phone-title').textContent = title;
+  $('phone-sub').textContent = sub || '';
+}
+
 async function checkDevice() {
-  const chip = $('device-chip');
+  if ($('phone').classList.contains('installing')) return; // не мешаем во время установки
   const r = await api.devices.check();
-  if (!r.ok) { chip.textContent = 'iPhone: —'; return; }
+  if (!r.ok) { setPhone('disconnected', '📱', 'iPhone', 'Не удалось проверить'); return; }
   const d = r.data;
-  if (!d.tools) { chip.textContent = 'iPhone: нет ideviceinstaller'; chip.className = 'device-chip'; }
-  else if (d.udid) { chip.textContent = 'iPhone: ' + (d.name || 'подключён'); chip.className = 'device-chip on'; }
-  else { chip.textContent = 'iPhone: не подключён'; chip.className = 'device-chip'; }
+  deviceState = d;
+  if (!d.tools) {
+    setPhone('disconnected', '🧩', 'Нет утилит',
+      'libimobiledevice не найден. Переустановите bmrng или поставьте утилиты вручную.');
+  } else if (d.udid) {
+    setPhone('connected', '📲', d.name || 'iPhone', 'Подключён и готов к установке');
+    $('phone-caption').textContent = 'UDID ' + d.udid.slice(0, 8) + '…';
+    return;
+  } else {
+    setPhone('disconnected', '📱', 'iPhone не подключён',
+      'Подключите кабелем, разблокируйте и нажмите «Доверять». Нужен iTunes с apple.com — вместе с ним ставится служба Apple, без которой iPhone не виден.');
+  }
+  $('phone-caption').textContent = '';
+}
+
+// зеркалим установку на экран телефона
+function startPhoneInstall(apps) {
+  const phone = $('phone');
+  phone.classList.add('installing');
+  const wrap = $('phone-apps');
+  wrap.innerHTML = '';
+  phoneRows.clear();
+  apps.forEach((a) => {
+    const el = document.createElement('div');
+    el.className = 'phone-app';
+    el.innerHTML = `<img src="${a.icon || ''}" alt=""><div class="pnm">${escapeHtml(a.name)}</div><div class="pst spin">…</div>`;
+    wrap.appendChild(el);
+    phoneRows.set(a.key, el.querySelector('.pst'));
+  });
+  $('phone-caption').textContent = deviceState.name || 'iPhone';
+}
+function setPhoneApp(key, symbol, spin) {
+  const st = phoneRows.get(key);
+  if (!st) return;
+  st.textContent = symbol;
+  st.className = 'pst' + (spin ? ' spin' : '');
+}
+function endPhoneInstall() {
+  $('phone').classList.remove('installing');
+  checkDevice();
 }
 
 // собрать выбранные приложения + ручные ID
@@ -177,6 +231,7 @@ async function onGo() {
   if (!apps.length) return err('Шаг 1: выберите хотя бы одно приложение');
   if (!email || !pass) return err('Шаг 2: введите Apple ID и пароль');
 
+  currentApps = apps;
   rows.clear(); $('progress-list').innerHTML = '';
   apps.forEach((a) => addRow(a));
   lock(true);
@@ -250,6 +305,8 @@ function onPhase(p) {
     released: 'Мак свободен. Качаю напрямую с Apple…',
   };
   if (map[p.phase]) $('flow-status').textContent = map[p.phase];
+  // как мак освободился и телефон подключён — показываем установку на экране айфона
+  if (p.phase === 'released' && deviceState.udid) startPhoneInstall(currentApps);
 }
 
 function onApp(p) {
@@ -257,16 +314,17 @@ function onApp(p) {
     meta: () => setRow(p.key, { state: 'в очереди', name: p.name ? `${p.name} ${p.version || ''}` : undefined }),
     downloading: () => setRow(p.key, { pct: p.pct, state: `качаю ${p.pct || 0}%` }),
     building: () => setRow(p.key, { pct: 100, state: 'собираю…' }),
-    installing: () => setRow(p.key, { state: 'ставлю на iPhone…' }),
-    installed: () => setRow(p.key, { state: '✓ установлено' }),
-    ready: () => setRow(p.key, { state: p.message ? '⚠ ' + p.message : 'готово (файл)' }),
-    error: () => setRow(p.key, { state: '⚠ ' + (p.message || 'ошибка') }),
+    installing: () => { setRow(p.key, { state: 'ставлю на iPhone…' }); setPhoneApp(p.key, '⏳', true); },
+    installed: () => { setRow(p.key, { state: '✓ установлено' }); setPhoneApp(p.key, '✓'); },
+    ready: () => { setRow(p.key, { state: p.message ? '⚠ ' + p.message : 'готово (файл)' }); setPhoneApp(p.key, '•'); },
+    error: () => { setRow(p.key, { state: '⚠ ' + (p.message || 'ошибка') }); setPhoneApp(p.key, '⚠'); },
   };
   (labels[p.state] || (() => {}))();
 }
 
 function onDone(p) {
   lock(false); resetGo(); awaitingCode = false;
+  setTimeout(endPhoneInstall, 1500);
   if (p.error) { $('flow-status').textContent = 'Ошибка: ' + p.error; return; }
   if (p.balance != null && user) { user.install_balance = p.balance; renderBalance(); }
   $('flow-status').textContent = p.installed

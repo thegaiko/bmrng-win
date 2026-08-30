@@ -29,10 +29,13 @@ function run(exe, args, timeout = 180000) {
 
 // UDID первого подключённого устройства (или null).
 async function connectedDevice() {
-  const r = await run(tool('idevice_id'), ['-l'], 15000);
+  const exe = tool('idevice_id');
+  const first = (out) => (out || '').trim().split(/\s+/).filter(Boolean)[0] || null;
+  let r = await run(exe, ['-l'], 15000);
   if (r.err && r.err.code === 'ENOENT') return { error: 'no-tools' };
-  const udid = (r.stdout || '').trim().split(/\s+/).filter(Boolean)[0];
-  return { udid: udid || null };
+  let udid = first(r.stdout);
+  if (!udid) { r = await run(exe, ['-l'], 8000); udid = first(r.stdout); } // службе Apple нужно мгновение
+  return { udid };
 }
 
 // Имя устройства (для чека и списания).

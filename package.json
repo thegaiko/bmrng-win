@@ -1,13 +1,16 @@
 {
   "name": "bmrng",
   "productName": "bmrng",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "bmrng — установка приложений из App Store на iPhone",
   "author": "bmrng",
   "license": "UNLICENSED",
   "private": true,
   "main": "src/main/main.js",
-  "repository": { "type": "git", "url": "https://github.com/thegaiko/bmrng-win.git" },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/thegaiko/bmrng-win.git"
+  },
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --win --publish never",
@@ -35,11 +38,27 @@
       "!**/*.test.js"
     ],
     "extraResources": [
-      { "from": "resources/tools", "to": "tools", "filter": ["**/*"] }
+      {
+        "from": "resources/tools",
+        "to": "tools",
+        "filter": [
+          "**/*"
+        ]
+      }
     ],
-    "directories": { "output": "release", "buildResources": "build" },
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
     "win": {
-      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
       "icon": "build/icon.png",
       "artifactName": "bmrng-setup-${version}.${ext}"
     },
@@ -52,7 +71,10 @@
       "shortcutName": "bmrng"
     },
     "publish": [
-      { "provider": "github", "releaseType": "release" }
+      {
+        "provider": "github",
+        "releaseType": "release"
+      }
     ]
   }
 }

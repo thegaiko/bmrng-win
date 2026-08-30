@@ -85,46 +85,68 @@
         <button class="btn-secondary" id="update-install">Перезапустить</button>
       </div>
 
-      <!-- Шаг 1: приложения -->
-      <section class="section card">
-        <h2><span class="step-num">1</span>Какие приложения</h2>
-        <div class="sub">Выберите из каталога или впишите ID/bundle вручную (по одному в строке).</div>
-        <input class="field search" id="search" placeholder="Поиск по каталогу…" />
-        <div class="apps-grid" id="apps-grid"></div>
-        <div style="margin-top:12px">
-          <label class="lbl">Свои ID (число из ссылки App Store или bundle id)</label>
-          <input class="field" id="manual-ids" placeholder="686449807, ph.telegra.Telegraph" />
-        </div>
-      </section>
+      <div class="cols">
+        <div class="left">
+          <!-- Шаг 1: приложения -->
+          <section class="section card">
+            <h2><span class="step-num">1</span>Какие приложения</h2>
+            <div class="sub">Выберите из каталога или впишите ID/bundle вручную (по одному в строке).</div>
+            <input class="field search" id="search" placeholder="Поиск по каталогу…" />
+            <div class="apps-grid" id="apps-grid"></div>
+            <div style="margin-top:12px">
+              <label class="lbl">Свои ID (число из ссылки App Store или bundle id)</label>
+              <input class="field" id="manual-ids" placeholder="686449807, ph.telegra.Telegraph" />
+            </div>
+          </section>
 
-      <!-- Шаг 2: Apple ID -->
-      <section class="section card">
-        <h2><span class="step-num">2</span>Apple ID</h2>
-        <div class="sub">Аккаунт Apple, к которому привязаны приложения. Пароль нигде не сохраняется.</div>
-        <div class="field-2">
-          <div><label class="lbl">Apple ID</label><input class="field" id="ap-email" type="email" /></div>
-          <div><label class="lbl">Пароль</label><input class="field" id="ap-pass" type="password" /></div>
-        </div>
-        <div id="code-row" class="hidden" style="margin-top:12px">
-          <label class="lbl">Код двухфакторной аутентификации</label>
-          <input class="field" id="ap-code" style="max-width:200px" inputmode="numeric" />
-          <div class="warn" style="font-size:12px;margin-top:4px">Apple прислал код на ваши устройства</div>
-        </div>
-        <div class="row" style="margin-top:14px">
-          <div class="device-chip" id="device-chip">iPhone: проверяю…</div>
-          <div class="spacer"></div>
-          <div class="err" id="flow-error"></div>
-          <button class="btn-primary" id="btn-go">Войти и скачать</button>
-        </div>
-      </section>
+          <!-- Шаг 2: Apple ID -->
+          <section class="section card">
+            <h2><span class="step-num">2</span>Apple ID</h2>
+            <div class="sub">Аккаунт Apple, к которому привязаны приложения. Пароль нигде не сохраняется.</div>
+            <div class="field-2">
+              <div><label class="lbl">Apple ID</label><input class="field" id="ap-email" type="email" /></div>
+              <div><label class="lbl">Пароль</label><input class="field" id="ap-pass" type="password" /></div>
+            </div>
+            <div id="code-row" class="hidden" style="margin-top:12px">
+              <label class="lbl">Код двухфакторной аутентификации</label>
+              <input class="field" id="ap-code" style="max-width:200px" inputmode="numeric" />
+              <div class="warn" style="font-size:12px;margin-top:4px">Apple прислал код на ваши устройства</div>
+            </div>
+            <div class="row" style="margin-top:14px">
+              <div class="err" id="flow-error"></div>
+              <div class="spacer"></div>
+              <button class="btn-primary" id="btn-go">Войти и скачать</button>
+            </div>
+          </section>
 
-      <!-- Шаг 3: загрузки -->
-      <section class="section card">
-        <h2><span class="step-num">3</span>Загрузка и установка</h2>
-        <div class="banner queue hidden" id="queue-banner" style="margin-bottom:12px"></div>
-        <div class="sub" id="flow-status">Здесь появятся приложения с прогрессом.</div>
-        <div id="progress-list"></div>
-      </section>
+          <!-- Шаг 3: загрузки -->
+          <section class="section card">
+            <h2><span class="step-num">3</span>Загрузка и установка</h2>
+            <div class="banner queue hidden" id="queue-banner" style="margin-bottom:12px"></div>
+            <div class="sub" id="flow-status">Здесь появятся приложения с прогрессом.</div>
+            <div id="progress-list"></div>
+          </section>
+        </div>
+
+        <!-- Правая колонка: айфон -->
+        <aside class="right">
+          <div class="phone" id="phone">
+            <div class="phone-bezel">
+              <div class="notch"></div>
+              <div class="screen" id="phone-screen">
+                <div class="phone-state" id="phone-state">
+                  <div class="phone-ico" id="phone-ico">📱</div>
+                  <div class="phone-title" id="phone-title">Проверяю iPhone…</div>
+                  <div class="phone-sub" id="phone-sub"></div>
+                  <button class="btn-secondary" id="phone-refresh" style="margin-top:10px">Проверить снова</button>
+                </div>
+                <div class="phone-apps" id="phone-apps"></div>
+              </div>
+            </div>
+            <div class="phone-caption" id="phone-caption"></div>
+          </div>
+        </aside>
+      </div>
     </main>
   </div>
 

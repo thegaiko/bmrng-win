@@ -24,10 +24,10 @@ let downloadDir = null;
 
 function createWindow() {
   win = new BrowserWindow({
-    width: 940,
-    height: 720,
-    minWidth: 820,
-    minHeight: 620,
+    width: 1000,
+    height: 760,
+    minWidth: 860,
+    minHeight: 640,
     backgroundColor: '#F7F5F4',
     title: 'bmrng',
     autoHideMenuBar: true,
