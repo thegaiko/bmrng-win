@@ -2,6 +2,7 @@
 const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const { Store } = require('./store');
 const { BackendAPI } = require('./backend');
 const { InstallFlow } = require('./flow');
@@ -104,6 +105,35 @@ ipcMain.handle('flow:code', wrap(async (code) => {
   return flow.submitCode(code);
 }));
 
+// Ручная установка уже скачанного .ipa (кнопка «Установить»): списание за
+// установку идёт здесь — резерв → установка → подтверждение/возврат.
+ipcMain.handle('install:app', wrap(async ({ key, path: ipaPath, appName, appID }) => {
+  if (!ipaPath || !fs.existsSync(ipaPath)) return { ok: false, error: 'нет файла — скачайте заново' };
+  const dev = await devices.connectedDevice();
+  if (dev.error === 'no-tools') return { ok: false, error: 'нет ideviceinstaller' };
+  if (!dev.udid) return { ok: false, error: 'iPhone не подключён' };
+  const deviceNm = await devices.deviceName(dev.udid);
+
+  const operationID = crypto.randomUUID();
+  try {
+    const r = await backend.reserveInstall({
+      operationID, appKey: key, appName: appName || key, appID: String(appID || ''),
+      deviceName: deviceNm, deviceUDID: dev.udid,
+    });
+    send('flow', { event: 'balance', payload: { balance: r.balance } });
+  } catch (e) {
+    return { ok: false, error: 'баланс: ' + e.message };
+  }
+
+  const res = await devices.install(ipaPath, dev.udid);
+  if (res.ok) {
+    try { const c = await backend.completeInstall(operationID); send('flow', { event: 'balance', payload: { balance: c.balance } }); } catch {}
+    return { ok: true };
+  }
+  try { const c = await backend.refundInstall(operationID); send('flow', { event: 'balance', payload: { balance: c.balance } }); } catch {}
+  return { ok: false, error: 'установить не удалось' };
+}));
+
 // --- прочее --------------------------------------------------------------------
 
 ipcMain.handle('app:openDownloads', wrap(async () => { fs.mkdirSync(downloadDir, { recursive: true }); shell.openPath(downloadDir); return true; }));
@@ -124,3 +154,9 @@ function setupUpdater() {
 }
 
 ipcMain.handle('update:install', wrap(async () => { if (autoUpdater) autoUpdater.quitAndInstall(); return true; }));
+ipcMain.handle('update:check', wrap(async () => {
+  if (!autoUpdater || !app.isPackaged) return { supported: false, version: app.getVersion() };
+  const r = await autoUpdater.checkForUpdates();
+  const latest = r && r.updateInfo ? r.updateInfo.version : app.getVersion();
+  return { supported: true, current: app.getVersion(), latest, available: latest !== app.getVersion() };
+}));

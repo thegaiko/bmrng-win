@@ -36,6 +36,7 @@ async function enterMain(u) {
   $('avatar').textContent = (u.name || u.email || '?').trim()[0].toUpperCase();
   $('acct-email').textContent = u.email || '';
   $('tu-price').textContent = u.price_per_install;
+  api.app.version().then((r) => { if (r && r.ok) $('acct-version').textContent = 'bmrng ' + r.data; });
   await loadCatalog();
   checkDevice();
 }
@@ -115,6 +116,15 @@ function wireMain() {
   $('mi-logout').onclick = async () => { await api.backend.logout(); menu.classList.add('hidden'); location.reload(); };
   $('mi-downloads').onclick = () => api.app.openDownloads();
   $('mi-refresh').onclick = async () => { const r = await api.backend.me(); if (r.ok) { user = r.data; renderBalance(); } };
+  $('mi-update').onclick = async () => {
+    $('mi-update').textContent = 'Проверяю…';
+    const r = await api.update.check();
+    const d = r && r.ok ? r.data : null;
+    if (!d || !d.supported) $('mi-update').textContent = 'Обновления — только в установленной версии';
+    else if (d.available) { $('mi-update').textContent = 'Есть обновление ' + d.latest + ' — качаю…'; }
+    else $('mi-update').textContent = 'Установлена последняя (' + d.current + ')';
+    setTimeout(() => { $('mi-update').textContent = 'Проверить обновления'; }, 4000);
+  };
   $('search').oninput = () => renderCatalog($('search').value.trim().toLowerCase());
   $('btn-go').onclick = onGo;
   $('update-install').onclick = () => api.update.install();
@@ -282,9 +292,35 @@ function addRow(app) {
   const el = document.createElement('div');
   el.className = 'progress-row';
   el.innerHTML = `<img src="${app.icon || ''}" alt="" /><div class="nm">${escapeHtml(app.name)}</div>
-    <div class="bar"><i></i></div><div class="state">ожидает</div>`;
+    <div class="bar"><i></i></div><div class="state">ожидает</div>
+    <button class="btn-secondary row-install" style="display:none">Установить</button>`;
+  const r = {
+    el, bar: el.querySelector('i'), state: el.querySelector('.state'), nm: el.querySelector('.nm'),
+    btn: el.querySelector('.row-install'), name: app.name, id: app.id, path: null,
+  };
+  r.btn.onclick = () => installOne(app.key);
   $('progress-list').appendChild(el);
-  rows.set(app.key, { el, bar: el.querySelector('i'), state: el.querySelector('.state'), nm: el.querySelector('.nm') });
+  rows.set(app.key, r);
+}
+
+// показать кнопку «Установить», когда файл готов
+function readyRow(key, path) {
+  const r = rows.get(key);
+  if (!r) return;
+  if (path) r.path = path;
+  if (r.path) r.btn.style.display = '';
+}
+
+async function installOne(key) {
+  const r = rows.get(key);
+  if (!r || !r.path) return;
+  r.btn.disabled = true;
+  setRow(key, { state: 'ставлю на iPhone…' });
+  const res = await api.flow.installApp({ key, path: r.path, appName: r.name, appID: r.id });
+  const d = res && res.ok ? res.data : { ok: false, error: (res && res.error) || 'ошибка' };
+  r.btn.disabled = false;
+  if (d.ok) { setRow(key, { state: '✓ установлено' }); r.btn.textContent = 'Установить снова'; }
+  else { setRow(key, { state: '⚠ ' + d.error }); }
 }
 function setRow(key, { pct, state, name } = {}) {
   const r = rows.get(key); if (!r) return;
@@ -328,8 +364,8 @@ function onApp(p) {
     downloading: () => setRow(p.key, { pct: p.pct, state: `качаю ${p.pct || 0}%` }),
     building: () => setRow(p.key, { pct: 100, state: 'собираю…' }),
     installing: () => { setRow(p.key, { state: 'ставлю на iPhone…' }); setPhoneApp(p.key, '⏳', true); },
-    installed: () => { setRow(p.key, { state: '✓ установлено' }); setPhoneApp(p.key, '✓'); },
-    ready: () => { setRow(p.key, { state: p.message ? '⚠ ' + p.message : 'готово (файл)' }); setPhoneApp(p.key, '•'); },
+    installed: () => { setRow(p.key, { state: '✓ установлено' }); setPhoneApp(p.key, '✓'); readyRow(p.key, p.path); },
+    ready: () => { setRow(p.key, { state: p.message ? '⚠ ' + p.message : 'готово — можно ставить' }); setPhoneApp(p.key, '•'); readyRow(p.key, p.path); },
     error: () => { setRow(p.key, { state: '⚠ ' + (p.message || 'ошибка') }); setPhoneApp(p.key, '⚠'); },
   };
   (labels[p.state] || (() => {}))();
@@ -353,8 +389,16 @@ function wireTopup() {
   $('tu-cancel').onclick = () => $('topup-overlay').classList.add('hidden');
   $('tu-qty').querySelectorAll('button').forEach((b) => b.onclick = () => {
     $('tu-qty').querySelectorAll('button').forEach((x) => x.classList.remove('sel'));
-    b.classList.add('sel'); qty = parseInt(b.dataset.q, 10); total();
+    b.classList.add('sel'); $('tu-custom').value = ''; qty = parseInt(b.dataset.q, 10); total();
   });
+  // своё количество: перебивает выбор кнопок
+  $('tu-custom').oninput = () => {
+    const n = parseInt($('tu-custom').value, 10);
+    if (n > 0) {
+      $('tu-qty').querySelectorAll('button').forEach((x) => x.classList.remove('sel'));
+      qty = n; total();
+    }
+  };
   $('tu-pay').onclick = async () => {
     $('tu-error').textContent = '';
     const r = await api.backend.topup(qty, $('tu-code').value.trim());

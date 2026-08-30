@@ -22,11 +22,13 @@ contextBridge.exposeInMainWorld('bmrng', {
   flow: {
     login: (apps, email, password) => invoke('flow:login', apps, email, password),
     code: (code) => invoke('flow:code', code),
+    installApp: (meta) => invoke('install:app', meta),
     on: (cb) => ipcRenderer.on('flow', (_e, msg) => cb(msg)),
   },
   update: {
     on: (cb) => ipcRenderer.on('update', (_e, msg) => cb(msg)),
     install: () => invoke('update:install'),
+    check: () => invoke('update:check'),
   },
   app: {
     version: () => invoke('app:version'),

@@ -17,7 +17,7 @@ class BackendAPI {
   get hasToken() { return !!this.token; }
 
   async _request(path, { method = 'GET', body = null, authorized = true } = {}) {
-    const headers = { Accept: 'application/json' };
+    const headers = { Accept: 'application/json', 'X-Platform': 'win' };
     if (body) headers['Content-Type'] = 'application/json';
     if (authorized) {
       if (!this.token) throw new BackendError('Сессия bmrng истекла. Войдите снова.', 'unauthorized');
