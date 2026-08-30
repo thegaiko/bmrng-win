@@ -1,0 +1,58 @@
+{
+  "name": "bmrng",
+  "productName": "bmrng",
+  "version": "0.1.0",
+  "description": "bmrng — установка приложений из App Store на iPhone",
+  "author": "bmrng",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "src/main/main.js",
+  "repository": { "type": "git", "url": "https://github.com/OWNER/REPO.git" },
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win --publish never",
+    "release": "electron-builder --win --publish always"
+  },
+  "dependencies": {
+    "bplist-creator": "^0.1.1",
+    "bplist-parser": "^0.3.2",
+    "electron-updater": "^6.3.9",
+    "plist": "^3.1.0",
+    "yauzl": "^3.2.0",
+    "yazl": "^3.3.1"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "app.bmrng.win",
+    "productName": "bmrng",
+    "copyright": "bmrng",
+    "asar": true,
+    "files": [
+      "src/**/*",
+      "!**/*.test.js"
+    ],
+    "extraResources": [
+      { "from": "resources/tools", "to": "tools", "filter": ["**/*"] }
+    ],
+    "directories": { "output": "release", "buildResources": "build" },
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "build/icon.png",
+      "artifactName": "bmrng-setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "bmrng"
+    },
+    "publish": [
+      { "provider": "github" }
+    ]
+  }
+}

@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self';" />
+  <title>bmrng</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- ЭКРАН ВХОДА -->
+  <div id="auth">
+    <div class="panel">
+      <div class="head">
+        <img class="logo" src="assets/brand.png" alt="bmrng" style="width:56px;height:56px;border-radius:15px" />
+        <div class="wordmark">bmrng</div>
+      </div>
+      <div class="card">
+        <div class="tabs">
+          <button id="tab-login" class="active">Вход</button>
+          <button id="tab-register">Регистрация</button>
+        </div>
+        <div id="auth-error" class="err" style="margin-bottom:12px"></div>
+
+        <!-- вход -->
+        <form id="form-login" class="stack">
+          <div><label class="lbl">Email</label><input class="field" type="email" id="li-email" autocomplete="username" /></div>
+          <div><label class="lbl">Пароль</label><input class="field" type="password" id="li-pass" autocomplete="current-password" /></div>
+          <button class="btn-primary" type="submit" style="width:100%">Войти</button>
+          <div class="row"><span class="link" id="go-reset">Забыли пароль?</span></div>
+        </form>
+
+        <!-- регистрация -->
+        <form id="form-register" class="stack hidden">
+          <div><label class="lbl">Имя</label><input class="field" id="rg-name" /></div>
+          <div><label class="lbl">Email</label><input class="field" type="email" id="rg-email" /></div>
+          <div><label class="lbl">Пароль</label><input class="field" type="password" id="rg-pass" /></div>
+          <button class="btn-primary" type="submit" style="width:100%">Создать аккаунт</button>
+        </form>
+
+        <!-- подтверждение email -->
+        <form id="form-verify" class="stack hidden">
+          <div class="muted" style="font-size:13px">Мы отправили код на <b id="vf-email"></b></div>
+          <div><label class="lbl">Код из письма</label><input class="field" id="vf-code" inputmode="numeric" /></div>
+          <button class="btn-primary" type="submit" style="width:100%">Подтвердить</button>
+          <div class="row"><span class="link" id="vf-resend">Отправить код снова</span></div>
+        </form>
+
+        <!-- сброс пароля -->
+        <form id="form-reset" class="stack hidden">
+          <div><label class="lbl">Email</label><input class="field" type="email" id="rs-email" /></div>
+          <div id="rs-step2" class="stack hidden">
+            <div><label class="lbl">Код из письма</label><input class="field" id="rs-code" /></div>
+            <div><label class="lbl">Новый пароль</label><input class="field" type="password" id="rs-pass" /></div>
+          </div>
+          <button class="btn-primary" type="submit" id="rs-btn" style="width:100%">Отправить код</button>
+          <div class="row"><span class="link" id="rs-back">Назад ко входу</span></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ГЛАВНЫЙ ЭКРАН -->
+  <div id="main">
+    <header class="bar">
+      <img class="logo sm" src="assets/brand.png" alt="" />
+      <div class="wordmark">bmrng</div>
+      <div class="spacer"></div>
+      <div class="balance-chip" id="balance-chip">
+        <span class="n" id="bal-n">—</span><span class="muted" id="bal-word">установок</span>
+      </div>
+      <button class="btn-secondary" id="btn-topup">Пополнить</button>
+      <div class="avatar" id="avatar">?</div>
+    </header>
+
+    <div class="menu card hidden" id="account-menu">
+      <div style="padding:8px 12px" class="muted" id="acct-email"></div>
+      <button id="mi-refresh">Обновить баланс</button>
+      <button id="mi-downloads">Папка загрузок</button>
+      <button id="mi-logout">Выйти</button>
+    </div>
+
+    <main class="content">
+      <div class="banner update card hidden" id="update-banner">
+        <span id="update-text">Доступно обновление</span><div class="spacer"></div>
+        <button class="btn-secondary" id="update-install">Перезапустить</button>
+      </div>
+
+      <!-- Шаг 1: приложения -->
+      <section class="section card">
+        <h2><span class="step-num">1</span>Какие приложения</h2>
+        <div class="sub">Выберите из каталога или впишите ID/bundle вручную (по одному в строке).</div>
+        <input class="field search" id="search" placeholder="Поиск по каталогу…" />
+        <div class="apps-grid" id="apps-grid"></div>
+        <div style="margin-top:12px">
+          <label class="lbl">Свои ID (число из ссылки App Store или bundle id)</label>
+          <input class="field" id="manual-ids" placeholder="686449807, ph.telegra.Telegraph" />
+        </div>
+      </section>
+
+      <!-- Шаг 2: Apple ID -->
+      <section class="section card">
+        <h2><span class="step-num">2</span>Apple ID</h2>
+        <div class="sub">Аккаунт Apple, к которому привязаны приложения. Пароль нигде не сохраняется.</div>
+        <div class="field-2">
+          <div><label class="lbl">Apple ID</label><input class="field" id="ap-email" type="email" /></div>
+          <div><label class="lbl">Пароль</label><input class="field" id="ap-pass" type="password" /></div>
+        </div>
+        <div id="code-row" class="hidden" style="margin-top:12px">
+          <label class="lbl">Код двухфакторной аутентификации</label>
+          <input class="field" id="ap-code" style="max-width:200px" inputmode="numeric" />
+          <div class="warn" style="font-size:12px;margin-top:4px">Apple прислал код на ваши устройства</div>
+        </div>
+        <div class="row" style="margin-top:14px">
+          <div class="device-chip" id="device-chip">iPhone: проверяю…</div>
+          <div class="spacer"></div>
+          <div class="err" id="flow-error"></div>
+          <button class="btn-primary" id="btn-go">Войти и скачать</button>
+        </div>
+      </section>
+
+      <!-- Шаг 3: загрузки -->
+      <section class="section card">
+        <h2><span class="step-num">3</span>Загрузка и установка</h2>
+        <div class="banner queue hidden" id="queue-banner" style="margin-bottom:12px"></div>
+        <div class="sub" id="flow-status">Здесь появятся приложения с прогрессом.</div>
+        <div id="progress-list"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Пополнение -->
+  <div class="overlay hidden" id="topup-overlay">
+    <div class="modal card">
+      <h3>Пополнить баланс</h3>
+      <div class="muted" style="font-size:13px;margin-bottom:12px">Цена за установку: <b id="tu-price">—</b> ₽</div>
+      <label class="lbl">Сколько установок</label>
+      <div class="qty" id="tu-qty">
+        <button data-q="5">5</button><button data-q="10" class="sel">10</button>
+        <button data-q="25">25</button><button data-q="50">50</button>
+      </div>
+      <div style="margin-top:12px"><label class="lbl">Промокод (если есть)</label><input class="field" id="tu-code" /></div>
+      <div class="err" id="tu-error" style="margin-top:8px"></div>
+      <div class="row" style="margin-top:16px">
+        <button class="btn-ghost" id="tu-cancel">Отмена</button><div class="spacer"></div>
+        <button class="btn-primary" id="tu-pay">Оплатить <span id="tu-total"></span></button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

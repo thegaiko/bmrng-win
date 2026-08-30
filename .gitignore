@@ -1,0 +1,11 @@
+node_modules/
+release/
+dist/
+*.log
+.DS_Store
+resources/tools/*
+!resources/tools/README.md
+
+# Секрет: реальный конфиг кластера (relay_token) — не в репозитории.
+# В CI создаётся из секрета CLUSTER_CONFIG, локально лежит рядом.
+src/main/cluster-config.json
